@@ -178,6 +178,37 @@ class ChromaDB(BaseVectorDB):
         contents = [result[0].page_content for result in results_formatted]
         return contents
 
+    def query_all(self, input_query: List[str], n_results: int, where: Dict[str, Any]) -> List[tuple[Document, float]]:
+        """
+        Query contents from vector data base based on vector similarity
+
+        :param input_query: list of query string
+        :type input_query: List[str]
+        :param n_results: no of similar documents to fetch from database
+        :type n_results: int
+        :param where: to filter data
+        :type where: Dict[str, Any]
+        :raises InvalidDimensionException: Dimensions do not match.
+        :return: Formatted results
+        :rtype: list[tuple[Document, float]]
+        """
+        try:
+            result = self.collection.query(
+                query_texts=[
+                    input_query,
+                ],
+                n_results=n_results,
+                where=where,
+            )
+        except InvalidDimensionException as e:
+            raise InvalidDimensionException(
+                e.message()
+                + ". This is commonly a side-effect when an embedding function, different from the one used to add the embeddings, is used to retrieve an embedding from the database."  # noqa E501
+            ) from None
+
+        results_formatted = self._format_result(result)
+        return results_formatted
+
     def set_collection_name(self, name: str):
         """
         Set the name of the collection. A collection is an isolated space for vectors.

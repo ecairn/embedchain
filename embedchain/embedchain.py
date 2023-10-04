@@ -442,6 +442,40 @@ class EmbedChain(JSONSerializable):
 
         return contents
 
+    def retrieve_all_from_database(self, input_query: str, config: Optional[BaseLlmConfig] = None, where=None) -> List[tuple[Document, float]]:
+        """
+        Queries the vector database based on the given input query.
+        Gets relevant doc based on the query
+
+        :param input_query: The query to use.
+        :type input_query: str
+        :param config: The query configuration, defaults to None
+        :type config: Optional[BaseLlmConfig], optional
+        :param where: A dictionary of key-value pairs to filter the database results, defaults to None
+        :type where: _type_, optional
+        :return: List of contents of the document that matched your query
+        :rtype: List[str]
+        """
+        query_config = config or self.llm.config
+
+        if where is not None:
+            where = where
+        elif query_config is not None and query_config.where is not None:
+            where = query_config.where
+        else:
+            where = {}
+
+        if self.config.id is not None:
+            where.update({"app_id": self.config.id})
+
+        contents = self.db.query_all(
+            input_query=input_query,
+            n_results=query_config.number_documents,
+            where=where,
+        )
+
+        return contents
+
     def query(self, input_query: str, config: BaseLlmConfig = None, dry_run=False, where: Optional[Dict] = None) -> str:
         """
         Queries the vector database based on the given input query.
